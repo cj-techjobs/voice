@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 
-export const API_BASE_URL='http://192.168.253.165:3000'
+export const API_BASE_URL='http://192.168.144.164:3000'
 
 // Base configuration for Axios
 const apiClient = axios.create({
-  baseURL: 'http://192.168.253.165:3000', // Replace with your API base URL
+  baseURL: 'http://192.168.144.164:3000', // Replace with your API base URL
   timeout: 10000, // Request timeout in milliseconds
   headers: {
     'Content-Type': 'multipart/form-data',

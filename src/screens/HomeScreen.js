@@ -3,11 +3,57 @@ import { View, Text, Button, Dimensions, StyleSheet, Image } from 'react-native'
 import LinearGradient from 'react-native-linear-gradient';
 import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import AudioRecoder from './AudioRecoder';
+import { useFocusEffect } from '@react-navigation/native';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
+const getCurrentDateTime = () => {
+    const currentDate = new Date();
+  
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDay = days[currentDate.getDay()];
+  
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentDayOfMonth = currentDate.getDate();
+  
+    const currentHours = currentDate.getHours();
+    const currentMinutes = currentDate.getMinutes();
+    const currentSeconds = currentDate.getSeconds();
+  
+    const ampm = currentHours >= 12 ? 'PM' : 'AM';
+
+    // Convert hours to 12-hour format
+    const hours12 = currentHours % 12;
+    const displayHours = hours12 === 0 ? 12 : hours12;
+
+
+    const formattedDate = `${currentMonth}/${currentDayOfMonth}/${currentYear}`;
+    const formattedTime = `${currentDay},  ${displayHours}:${currentMinutes}:${currentSeconds} ${ampm}`;
+  
+    return { formattedDate, formattedTime };
+  };
+
 function HomeScreen({ navigation }) {
+
+    const { formattedDate, formattedTime } = getCurrentDateTime();
+    const [currentTime,setCurrentTime]= useState(formattedTime);
+    const [currentDate,setCurrentDate]= useState(formattedDate);
+
+    useFocusEffect(
+        React.useCallback(() => {
+         return () => {
+            setCurrentTime(formattedTime)
+            setCurrentDate(formattedDate)
+            console.log('Screen is unfocused');
+          };
+        }, [])
+      );
+
+    console.log(`Current Date: ${formattedDate}`);
+    console.log(`Current Time: ${formattedTime}`);
+
 
     const requestPermissions = async () => {
         if (Platform.OS === 'android') {
@@ -49,17 +95,11 @@ function HomeScreen({ navigation }) {
             style={styles.gradient}
         >
             <View style={{ height: windowHeight/1, paddingHorizontal: 15, paddingTop: 20,marginTop:20 }}>
-                <Text style={{ color: "white", fontSize: 20, paddingTop: 7, fontWeight: '500' }}>Monday at 07:00 PM</Text>
-                <Text style={{ color: "white", fontSize: 16, paddingTop: 7, fontWeight: '500' }}>01 July 2024</Text>
+                <Text style={{ color: "white", fontSize: 20, paddingTop: 7, fontWeight: '500' }}>{currentTime}</Text>
+                <Text style={{ color: "white", fontSize: 16, paddingTop: 7, fontWeight: '500' }}>{currentDate}</Text>
                 
-                <View style={{ alignItems: "center", height: windowHeight/5,marginTop:20 }}>
-                    <Image resizeMode='contain' style={{ height: windowHeight/5, width:windowWidth/1.08 }} source={require("../images/pitch.png")} />
-                </View>
                 <AudioRecoder />
             </View>
-
-            {/* <PitchVisualization pitchData={samplePitchData} /> */}
-
         </LinearGradient>
     );
 }
