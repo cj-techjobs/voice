@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Dimensions, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image, Dimensions, FlatList, StyleSheet } from 'react-native';
 import CustomHeader from './CustomHeader';
 import LinearGradient from 'react-native-linear-gradient';
 import { getFormattedTime, onPause, onPlayPause } from '../utils/helpers';
@@ -9,7 +9,8 @@ import BarSegVoicePitch from './BarSegVoicePitch';
 import Equalizer from '../components/EqualizerVoice';
 import PitchVisualization from './PitchVisualization';
 import PlaybackSegments from '../components/PlaybackSegments';
-import { API_BASE_URL } from '../apiHandler/api';
+import { api, API_BASE_URL } from '../apiHandler/api';
+import axios from 'axios';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -27,6 +28,8 @@ const BarSegment = ({ route }) => {
     const [segmentEnd, setSegmentEnd] = useState(null); // End time in seconds
     const [repeatCount, setRepeatCount] = useState(0); // Counter for repeats
     const [maxRepeats, setMaxRepeats] = useState(3);
+    const [segName, setSegName] = useState('');
+    const [isfileSave, setIsFileSave] = useState(true);
 
 
     const { itemData } = route.params || {};
@@ -41,6 +44,7 @@ const BarSegment = ({ route }) => {
     const navigation = useNavigation();
 
     useEffect(() => {
+        getSegment();
         const unsubscribe = navigation.addListener('blur', () => {
             audioRecorderPlayer.stopPlayer();
             audioRecorderPlayer.removePlayBackListener();
@@ -52,12 +56,15 @@ const BarSegment = ({ route }) => {
 
 
     const generateNewSegment = () => {
-        if (currentSegment + 10 <= itemData.duration) {
+        if (!segments.length) {
             setSegments([...segments, currentPosition]);
-            // setSegmentEnd(currentPosition)
-            setCurrentSegment(currentSegment + 10);
-            setCurrentIndex(currentIndex + 1)
+            createSegment(0,currentPosition);
+            return { startTime: 0, endTime: duration };
         }
+        const lastSegment = segments[segments.length - 1];
+        const newStartTime = lastSegment.endTime;
+        setCurrentIndex(currentIndex + 1);
+        createSegment(newStartTime,currentPosition);
     };
 
 
@@ -102,6 +109,8 @@ const BarSegment = ({ route }) => {
         } else {
             setSegmentEnd(segments[index - 1])
         }
+
+
     }
 
     const handleRepeatPress = () => {
@@ -123,16 +132,79 @@ const BarSegment = ({ route }) => {
         });
     };
 
+    const createSegment = async (startTime,endTime) => {
+        try {
+            const formData = {
+                name: segName,
+                startTime: startTime,
+                endTime: endTime,
+                recordingId:itemData._id
+            };
+            console.log("=======", formData);
+            axios.post(`${API_BASE_URL}/segment`, formData)
+                .then(response => {
+                    console.log(response.data);
+                    getSegment();
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const getSegment = async () => {
+        try {
+            const response = await api.get(`/segments/${itemData._id}`);
+            console.log(response.data);
+            setSegments(response.data)
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const updateSegment = async (item) => {
+        console.log(item);
+        setIsFileSave(!isfileSave)
+        try {
+            const formData = new FormData();
+            formData.append('name', segName);
+            formData.append('startTime', 10);
+            formData.append('endTime', 20);
+            const response = await api.post(`/segment${segmentId}`, formData);
+            console.log(response.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const renderItem = ({ item, index }) => (
         <TouchableOpacity onPress={() => selectSegement(item, index)} style={[styles.segmentContainer, index == currentIndex && {
             borderWidth: 0.5,
             borderColor: "white"
         }]}>
-            {isPlaying && index == currentIndex ? (
-                <Text style={styles.segmentTitle}>{index == currentIndex && getFormattedTime(item)} </Text>
-            ) : (
-                <Text style={styles.segmentTitle}>{getFormattedTime(item)}</Text>
-            )}
+            {isfileSave ? 
+            <>
+            <Text style={styles.segmentTitle}>{item.name ? item.name : getFormattedTime(item.endTime)}</Text>
+                {/* {isPlaying && index == currentIndex ? (
+                    <Text style={styles.segmentTitle}>{index == currentIndex && getFormattedTime(item)} </Text>
+                ) : (
+                    <Text style={styles.segmentTitle}>{item.name ? item.name : getFormattedTime(item)}</Text>
+                )} */}
+            </>
+                :
+                <TextInput
+                    style={{ height: 40, width: windowWidth / 1.5, marginTop: 0, borderRadius: 7, borderColor: 'gray', borderWidth: 0 }}
+                    placeholder="Enter file name"
+                    onChangeText={text => setSegName(text)}
+                    value={segName}
+                />
+            }
+
+            <TouchableOpacity onPress={() => { updateSegment(item) }} style={{ backgroundColor: '#185d5f', width: 85, justifyContent: "center", alignItems: 'center', padding: 7, borderRadius: 10 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: "white" }}>{isfileSave ? "Add Name" : "Save"}</Text>
+            </TouchableOpacity>
 
         </TouchableOpacity>
     );
@@ -204,7 +276,7 @@ const styles = StyleSheet.create({
     segmentContainer: {
         padding: 10,
         borderRadius: 5,
-        marginHorizontal: 3
+        marginHorizontal: 3, flexDirection: 'row', justifyContent: 'space-between', alignItems: "center"
     },
     segmentTitle: {
         fontSize: 18,

@@ -10,6 +10,7 @@ import CustomHeader from './src/screens/CustomHeader';
 import { StyleSheet, Dimensions, Image, TouchableOpacity } from 'react-native';
 import ProfileScreen from './src/screens/Profile';
 import BarSegment from './src/screens/BarSegment';
+import SegListenOrLearn from './src/screens/SegListenOrLearn';
 
 const Stack = createStackNavigator();
 function App() {
@@ -20,6 +21,7 @@ function App() {
         }} initialRouteName="Recodings">
           <Stack.Screen name="Recodings" component={Recodings} />
           <Stack.Screen name="BarSegment" component={BarSegment} />
+          <Stack.Screen name="SegListenOrLearn" component={SegListenOrLearn} />
 
         </Stack.Navigator>
       </NavigationContainer>
